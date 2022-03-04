@@ -1,0 +1,147 @@
+{
+  "name": "swap",
+  "steps": [
+    {
+      "step": "setState",
+      "accounts": {
+        "address:user": {
+          "balance": "10,000,000,000",
+          "esdt": {
+            "str:WEGLD-abcdef": "7,000,000,000",
+            "str:MEX-abcdef": "7,000,000,000"
+          }
+        },
+        "sc:maiar_pair_WegldMex": {
+          "esdt": {
+            "str:WEGLD-abcdef": {
+              "roles": ["ESDTRoleLocalBurn"]
+            },
+            "str:WEGLDMEX-abcdef": {
+              "roles": ["ESDTRoleLocalMint", "ESDTRoleLocalBurn"]
+            }
+          },
+          "storage": {
+            "str:first_token_id": "str:WEGLD-abcdef",
+            "str:second_token_id": "str:MEX-abcdef",
+            "str:lpTokenIdentifier": "str:WEGLDMEX-abcdef",
+            "str:total_fee_percent": "300",
+            "str:state": "1",
+            "str:transfer_exec_gas_limit": "25,000,000",
+            "str:extern_swap_gas_limit": "50,000,000"
+          },
+          "code": "file:../external-wasms/maiar-pair.wasm"
+        }
+      }
+    },
+    {
+      "step": "scCall",
+      "txId": "add-liquidity",
+      "tx": {
+        "from": "address:user",
+        "to": "sc:maiar_pair_WegldMex",
+        "esdt": [
+          {
+            "tokenIdentifier": "str:WEGLD-abcdef",
+            "value": "2,000,000,000"
+          },
+          {
+            "tokenIdentifier": "str:MEX-abcdef",
+            "value": "2,000,000,000"
+          }
+        ],
+        "function": "addLiquidity",
+        "arguments": ["2,000,000,000", "2,000,000,000"],
+        "gasLimit": "100,000,000",
+        "gasPrice": "0"
+      },
+      "expect": {
+        "out": ["*", "*", "*"],
+        "status": "0",
+        "message": "",
+        "gas": "*",
+        "refund": "*"
+      }
+    },
+    {
+      "step": "setState",
+      "newAddresses": [
+        {
+          "creatorAddress": "address:user",
+          "creatorNonce": "1",
+          "newAddress": "sc:arda_swap"
+        }
+      ]
+    },
+    {
+      "step": "scDeploy",
+      "txId": "deploy-arda-swap",
+      "tx": {
+        "from": "address:user",
+        "contractCode": "file:../output/arda-swap.wasm",
+        "gasLimit": "100,000,000",
+        "gasPrice": "0"
+      },
+      "expect": {
+        "out": [],
+        "status": "",
+        "gas": "*",
+        "refund": "*"
+      }
+    },
+    {
+      "step": "checkState",
+      "accounts": {
+        "address:user": {
+          "nonce": "2",
+          "balance": "10,000,000,000",
+          "esdt": {
+            "str:WEGLD-abcdef": "5,000,000,000",
+            "str:MEX-abcdef": "5,000,000,000",
+            "str:WEGLDMEX-abcdef": "1,999,999,000"
+          }
+        },
+        "sc:arda_swap": {
+          "code": "*"
+        },
+        "sc:maiar_pair_WegldMex": {
+          "esdt": {
+            "str:WEGLD-abcdef": {
+              "balance": "2,000,000,000",
+              "roles": ["ESDTRoleLocalBurn"]
+            },
+            "str:MEX-abcdef": "2,000,000,000",
+            "str:WEGLDMEX-abcdef": {
+              "balance": "1,000",
+              "roles": ["ESDTRoleLocalMint", "ESDTRoleLocalBurn"]
+            }
+          },
+          "code": "*",
+          "storage": "*"
+        }
+      }
+    },
+    {
+      "step": "scCall",
+      "txId": "swap-MEX-to-BUSD",
+      "tx": {
+        "from": "address:user",
+        "to": "sc:arda_swap",
+        "function": "swap",
+        "esdt": {
+          "tokenIdentifier": "str:MEX-abcdef",
+          "value": "200,000"
+        },
+        "arguments": ["sc:maiar_pair_WegldMex", "str:WEGLD-abcdef"],
+        "gasLimit": "1,000,000,000",
+        "gasPrice": "0"
+      },
+      "expect": {
+        "out": ["*", "*"],
+        "status": "0",
+        "message": "",
+        "gas": "*",
+        "refund": "*"
+      }
+    }
+  ]
+}
